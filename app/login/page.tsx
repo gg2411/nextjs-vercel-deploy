@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
@@ -38,11 +38,81 @@ export default function LoginPage() {
     }
   }
 
+  const handleOAuthSignIn = async (provider: 'google' | 'github') => {
+    setError(null)
+    setLoading(true)
+
+    try {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (oauthError) {
+        setError(oauthError.message)
+        setLoading(false)
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+      console.error(err)
+      setLoading(false)
+    }
+  }
+
   return (
     <div style={{ padding: '20px', maxWidth: '400px', margin: '50px auto' }}>
       <h1>Sign In</h1>
 
-      <form onSubmit={handleSignIn}>
+      {/* OAuth Buttons */}
+      <div style={{ marginBottom: '20px' }}>
+        <button
+          onClick={() => handleOAuthSignIn('google')}
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '10px',
+            marginBottom: '10px',
+            backgroundColor: '#4285f4',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontSize: '16px',
+          }}
+        >
+          {loading ? 'Loading...' : 'Continue with Google'}
+        </button>
+
+        <button
+          onClick={() => handleOAuthSignIn('github')}
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '10px',
+            backgroundColor: '#24292e',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontSize: '16px',
+          }}
+        >
+          {loading ? 'Loading...' : 'Continue with GitHub'}
+        </button>
+      </div>
+
+      {/* Divider */}
+      <div style={{ textAlign: 'center', margin: '20px 0', color: '#666' }}>
+        <span style={{ padding: '0 10px', backgroundColor: 'white', position: 'relative', zIndex: 1 }}>
+          OR
+        </span>
+        <hr style={{ marginTop: '-12px', border: 'none', borderTop: '1px solid #ddd' }} />
+      </div>
+
+      {/* Email/Password Form */}
+      <form onSubmit={handleEmailSignIn}>
         <div style={{ marginBottom: '15px' }}>
           <label htmlFor="email">Email</label>
           <input
@@ -91,7 +161,7 @@ export default function LoginPage() {
           style={{
             width: '100%',
             padding: '10px',
-            backgroundColor: loading ? '#ccc' : '#007bff',
+            backgroundColor: loading ? '#ccc' : '#0070ff',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
