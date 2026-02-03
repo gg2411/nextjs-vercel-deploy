@@ -68,8 +68,8 @@ export default function RateCaptionsPage() {
         .from('caption_votes')
         .insert({
           caption_id: captionId,
-          user_id: user.id,
-          vote: voteValue
+          profile_id: user.id,
+          vote_value: voteValue
         })
 
       if (voteError) {
