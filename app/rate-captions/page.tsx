@@ -1,4 +1,4 @@
-'use client'
+'user_iduse client'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
@@ -67,9 +67,10 @@ export default function RateCaptionsPage() {
       const { error: voteError } = await supabase
         .from('caption_votes')
         .insert({
-          caption_id: captionId,
+א          caption_id: captionId,
           profile_id: user.id,
-          vote_value: voteValue
+          vote_value: voteValue,
+                   created_datetime_utc: new Date().toISOString()
         })
 
       if (voteError) {

@@ -1,6 +1,77 @@
 'use client'
 
+<<<<<<< HEAD
 import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
+
+function LoginForm() {
+    const router = useRouter()
+      const searchParams = useSearchParams()
+        const supabase = createClient()
+          const [email, setEmail] = useState('')
+            const [password, setPassword] = useState('')
+              const [error, setError] = useState<string | null>(null)
+                const [loading, setLoading] = useState(false)
+                
+                  // Check for OAuth errors in URL params
+                  //   useEffect(() => {
+                  //     const errorParam = searchParams.get('error')
+                  //     if (errorParam) {
+                  //       setError(decodeURIComponent(errorParam))
+                  //     }
+                    }, [searchParams])
+                    
+                      const handleEmailSignIn = async (e: React.FormEvent) => {
+                            e.preventDefault()
+                                setError(null)
+                                    setLoading(true)
+                                    
+                                        try {
+                                                const { error: signInError } = await supabase.auth.signInWithPassword({
+                                                          email,
+                                                                  password,
+                                                                        })
+                                                                        
+                                                                              if (signInError) {
+                                                                                        setError(signInError.message)
+                                                                                                return
+                                                                                                      }
+                                                                                                      
+                                                                                                            router.refresh()
+                                                                                                                  router.push('/')
+                                                                                                    } catch (err) {
+                                                                                                            setError('An unexpected error occurred')
+                                                                                                                  console.error(err)
+                                                                                                                      } finally {
+                                                                                                                            setLoading(false)
+                                                                                                                      }
+                                                                                                                    }
+                                                                                                                    
+                                                                                                                      const handleGoogleSignIn = () => {
+                                                                                                                            // Redirect to our custom Google OAuth route
+                                                                                                                            //     window.location.href = '/api/auth/google'
+                                                                                                                            //   }
+                                                                                                                            
+                                                                                                                              // Check if Google OAuth is configured
+                                                                                                                              //   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+                                                                                                                              //   const showGoogleOAuth = googleClientId && googleClientId !== 'your-google-client-id.apps.googleuserc'use client'
+                                                                                                                              // 
+                                                                                                                              import { useState, useEffect, Suspense } from 'react'
+                                                                                                                              import { useRouter, useSearchParams } from 'next/navigation'
+                                                                                                                              import { createClient } from '@/utils/supabase/client'
+                                                                                                                              
+                                                                                                                              function LoginForm() {
+                                                                                                                                  const router = useRouter()
+                                                                                                                                    const searchParams = useSearchParams()
+                                                                                                                                      const supabase = createClient()
+                                                                                                                                        const [email, setEmail] = useState('')
+                                                                                                                                          c'use client'
+
+import { useState, useEffect } from 'react'
+=======
+import { useState, useEffect, Suspense } from 'react'
+>>>>>>> dbef6664617c8e323d954b1355614815023cd83a
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 
