@@ -1,8 +1,9 @@
-'user_iduse client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+import type { User } from '@supabase/supabase-js'
 
 interface Caption {
   id: number
@@ -16,7 +17,7 @@ export default function RateCaptionsPage() {
   const [captions, setCaptions] = useState<Caption[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [votingStatus, setVotingStatus] = useState<{ [key: number]: string }>({})
 
   useEffect(() => {
@@ -45,8 +46,8 @@ export default function RateCaptionsPage() {
         }
 
         setLoading(false)
-      } catch (err: any) {
-        setError(err.message)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
         setLoading(false)
       }
     }
@@ -67,10 +68,10 @@ export default function RateCaptionsPage() {
       const { error: voteError } = await supabase
         .from('caption_votes')
         .insert({
-א          caption_id: captionId,
+          caption_id: captionId,
           profile_id: user.id,
           vote_value: voteValue,
-                   created_datetime_utc: new Date().toISOString()
+          created_datetime_utc: new Date().toISOString()
         })
 
       if (voteError) {
@@ -87,8 +88,8 @@ export default function RateCaptionsPage() {
           })
         }, 2000)
       }
-    } catch (err: any) {
-      setVotingStatus({ ...votingStatus, [captionId]: `Error: ${err.message}` })
+    } catch (err) {
+      setVotingStatus({ ...votingStatus, [captionId]: `Error: ${err instanceof Error ? err.message : 'Unknown error'}` })
     }
   }
 

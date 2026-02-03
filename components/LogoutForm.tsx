@@ -1,16 +1,14 @@
-'use server'
-
 import { redirect } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
+import { createClient } from '@/utils/supabase/server'
 
 async function handleLogout() {
   'use server'
-  const supabase = createClient()
+  const supabase = await createClient()
   await supabase.auth.signOut()
   redirect('/login')
 }
 
-export default async function LogoutForm() {
+export default function LogoutForm() {
   return (
     <form action={handleLogout}>
       <button

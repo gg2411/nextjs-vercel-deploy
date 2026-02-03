@@ -1,17 +1,16 @@
-import { createClient } from '@/utils/supabase/client'
-import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
 import LogoutForm from '@/components/LogoutForm'
 import Link from 'next/link'
+
+interface ImageRecord {
+  id: number
+  url?: string
+  image_description?: string
+}
 
 export const revalidate = 60
 
 export default async function Home() {
-  // This is a server component - we can create a server-side client
-  // Note: For production, you should create a separate server client in utils/supabase/server.ts
-  
-  // For now, we'll demonstrate with the client-side approach
-  // In a real app, use createServerClient from '@supabase/auth-helpers-nextjs'
-  
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
@@ -23,8 +22,8 @@ export default async function Home() {
     )
   }
 
-  // Fetch images from Supabase (existing functionality)
-  const supabase = createClient()
+  // Fetch images from Supabase using server client
+  const supabase = await createClient()
   const { data: images, error } = await supabase
     .from('images')
     .select('*')
@@ -71,7 +70,7 @@ export default async function Home() {
                 gap: '20px',
               }}
             >
-              {images.map((image: any) => (
+              {images.map((image: ImageRecord) => (
                 <div
                   key={image.id}
                   style={{
