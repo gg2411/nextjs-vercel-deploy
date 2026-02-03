@@ -1,13 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 
-// Force dynamic rendering to allow useSearchParams
-export const dynamic = 'force-dynamic'
-
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -174,5 +171,13 @@ export default function LoginPage() {
         Don't have an account? Create one in the Supabase dashboard.
       </p>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }
