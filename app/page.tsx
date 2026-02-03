@@ -34,6 +34,19 @@ export default async function Home() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <h1>Images from Supabase</h1>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <Link href="/upload">
+            <button style={{
+              padding: '8px 16px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}>
+              Upload & Crack
+            </button>
+          </Link>
           <Link href="/rate-captions">
             <button style={{
               padding: '8px 16px',
