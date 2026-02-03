@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { redirect } from 'next/navigation'
 import LogoutForm from '@/components/LogoutForm'
+import Link from 'next/link'
 
 export const revalidate = 60
 
@@ -33,7 +34,22 @@ export default async function Home() {
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <h1>Images from Supabase</h1>
-        <LogoutForm />
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <Link href="/rate-captions">
+            <button style={{
+              padding: '8px 16px',
+              backgroundColor: '#0070f7',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}>
+              Rate Captions
+            </button>
+          </Link>
+          <LogoutForm />
+        </div>
       </div>
 
       {error ? (
