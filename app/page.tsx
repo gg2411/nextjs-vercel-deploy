@@ -1,16 +1,17 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/utils/supabase/client'
+import { redirect } from 'next/navigation'
 import LogoutForm from '@/components/LogoutForm'
 import Link from 'next/link'
-
-interface ImageRecord {
-  id: number
-  url?: string
-  image_description?: string
-}
 
 export const revalidate = 60
 
 export default async function Home() {
+  // This is a server component - we can create a server-side client
+  // Note: For production, you should create a separate server client in utils/supabase/server.ts
+  
+  // For now, we'll demonstrate with the client-side approach
+  // In a real app, use createServerClient from '@supabase/auth-helpers-nextjs'
+  
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
@@ -22,8 +23,8 @@ export default async function Home() {
     )
   }
 
-  // Fetch images from Supabase using server client
-  const supabase = await createClient()
+  // Fetch images from Supabase (existing functionality)
+  const supabase = createClient()
   const { data: images, error } = await supabase
     .from('images')
     .select('*')
@@ -34,7 +35,7 @@ export default async function Home() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <h1>Images from Supabase</h1>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <Link href="/upload">
+          <Link href="/upload-image">
             <button style={{
               padding: '8px 16px',
               backgroundColor: '#28a745',
@@ -44,7 +45,7 @@ export default async function Home() {
               cursor: 'pointer',
               fontSize: '14px'
             }}>
-              Upload & Crack
+              Upload Image
             </button>
           </Link>
           <Link href="/rate-captions">
@@ -83,7 +84,7 @@ export default async function Home() {
                 gap: '20px',
               }}
             >
-              {images.map((image: ImageRecord) => (
+              {images.map((image: any) => (
                 <div
                   key={image.id}
                   style={{
