@@ -8,6 +8,11 @@ interface Caption {
   id: number
   text: string
   image_id?: number
+  images?: {
+    id: number
+    url: string
+    image_description?: string
+  }
 }
 
 interface UserVote {
@@ -38,10 +43,10 @@ export default function RateCaptionsPage() {
 
         setUser(currentUser)
 
-        // Fetch captions to rate
+        // Fetch captions to rate with their images
         const { data: captionsData, error: captionsError } = await supabase
           .from('captions')
-          .select('*')
+          .select('*, images(*)')
           .limit(10)
 
         if (captionsError) {
@@ -219,7 +224,27 @@ export default function RateCaptionsPage() {
               >
                 <div style={{ marginBottom: '15px' }}>
                   <strong>Caption #{caption.id}:</strong>
-                  <p style={{ fontSize: '18px', margin: '10px 0' }}>{caption.text || 'No caption text'}</p>
+
+                  {/* Display the image */}
+                  {caption.images?.url && (
+                    <div style={{ margin: '15px 0' }}>
+                      <img
+                        src={caption.images.url}
+                        alt={caption.images.image_description || 'Image'}
+                        style={{
+                          maxWidth: '100%',
+                          height: 'auto',
+                          borderRadius: '8px',
+                          maxHeight: '400px',
+                          objectFit: 'contain'
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <p style={{ fontSize: '18px', margin: '10px 0', fontWeight: 'bold' }}>
+                    {caption.text || 'No caption text'}
+                  </p>
                   {caption.image_id && (
                     <p style={{ fontSize: '12px', color: '#666' }}>Image ID: {caption.image_id}</p>
                   )}
