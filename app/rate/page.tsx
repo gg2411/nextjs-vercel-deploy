@@ -97,6 +97,7 @@ export default function RatePage() {
 
     const existingVote = votes[captionId]
     const currentScore = scores[captionId] ?? 0
+    const now = new Date().toISOString()
 
     try {
       if (existingVote) {
@@ -119,20 +120,25 @@ export default function RatePage() {
           // Change vote
           const { error } = await supabase
             .from('caption_votes')
-            .update({ vote_value: value })
+            .update({ vote_value: value, modified_datetime_utc: now })
             .eq('id', existingVote.id)
 
           if (!error) {
             setVotes(prev => ({ ...prev, [captionId]: { ...existingVote, vote_value: value } }))
-            // Score shifts by 2 (e.g., from -1 to +1 = +2)
             setScores(prev => ({ ...prev, [captionId]: currentScore + value * 2 }))
           }
         }
       } else {
-        // New vote
+        // New vote — must include created_datetime_utc (NOT NULL, no default)
         const { data, error } = await supabase
           .from('caption_votes')
-          .insert({ caption_id: captionId, profile_id: user.id, vote_value: value })
+          .insert({
+            caption_id: captionId,
+            profile_id: user.id,
+            vote_value: value,
+            created_datetime_utc: now,
+            modified_datetime_utc: now,
+          })
           .select('id, caption_id, vote_value')
           .single()
 

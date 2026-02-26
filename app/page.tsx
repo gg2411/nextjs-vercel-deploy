@@ -6,12 +6,19 @@ import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
+interface CaptionPreview {
+  id: string
+  content: string
+  like_count: number | null
+}
+
 interface ImageRow {
   id: string
   url: string
   is_public: boolean
   created_datetime_utc: string
   additional_context?: string
+  captions: CaptionPreview[]
 }
 
 const PAGE_SIZE = 20
@@ -51,13 +58,16 @@ export default function HomePage() {
 
     const { data, error } = await supabase
       .from('images')
-      .select('id, url, is_public, created_datetime_utc, additional_context')
+      .select(`
+        id, url, is_public, created_datetime_utc, additional_context,
+        captions(id, content, like_count)
+      `)
       .eq('is_public', true)
       .order('created_datetime_utc', { ascending: false })
       .range(currentOffset, currentOffset + PAGE_SIZE - 1)
 
     if (!error && data) {
-      setImages(prev => currentOffset === 0 ? data : [...prev, ...data])
+      setImages(prev => currentOffset === 0 ? (data as ImageRow[]) : [...prev, ...(data as ImageRow[])])
       setHasMore(data.length === PAGE_SIZE)
       setOffset(currentOffset + data.length)
     }
@@ -145,12 +155,12 @@ export default function HomePage() {
                 transition: 'all 0.2s ease', fontWeight: 600, whiteSpace: 'nowrap',
               }}
               onMouseEnter={e => {
-                (e.target as HTMLElement).style.background = 'rgba(139,92,246,0.25)'
-                ;(e.target as HTMLElement).style.borderColor = 'rgba(139,92,246,0.6)'
+                (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.25)'
+                ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.6)'
               }}
               onMouseLeave={e => {
-                (e.target as HTMLElement).style.background = 'rgba(139,92,246,0.15)'
-                ;(e.target as HTMLElement).style.borderColor = 'rgba(139,92,246,0.35)'
+                (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.15)'
+                ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.35)'
               }}
             >
               ⭐ Rate Captions
@@ -180,7 +190,7 @@ export default function HomePage() {
             Image Gallery
           </h2>
           <p style={{ color: 'var(--muted)', fontSize: '14px' }}>
-            Showing {images.length} public image{images.length !== 1 ? 's' : ''} · Click Rate Captions to vote
+            Showing {images.length} public image{images.length !== 1 ? 's' : ''} · Hover to preview captions
           </p>
         </div>
 
@@ -200,7 +210,7 @@ export default function HomePage() {
         ) : (
           <div className="image-grid stagger">
             {images.map((img) => (
-              <ImageCard key={img.id} image={img} />
+              <ImageCard key={img.id} image={img} onRate={() => router.push('/rate')} />
             ))}
           </div>
         )}
@@ -231,11 +241,18 @@ export default function HomePage() {
   )
 }
 
-function ImageCard({ image }: { image: ImageRow }) {
+function ImageCard({ image, onRate }: { image: ImageRow; onRate: () => void }) {
   const [imgError, setImgError] = useState(false)
 
+  // Pick the top caption by like_count
+  const topCaption = image.captions?.length
+    ? [...image.captions].sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0))[0]
+    : null
+
+  const captionCount = image.captions?.length ?? 0
+
   return (
-    <div className="image-card">
+    <div className="image-card" onClick={onRate} style={{ cursor: 'pointer' }}>
       {imgError ? (
         <div style={{
           width: '100%', height: '100%',
@@ -258,17 +275,60 @@ function ImageCard({ image }: { image: ImageRow }) {
           unoptimized
         />
       )}
-      <div className="image-card-overlay">
-        <p style={{
-          fontSize: '10px', color: 'rgba(255,255,255,0.5)',
-          fontFamily: 'var(--font-geist-mono)', letterSpacing: '0.02em',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+
+      {/* Caption count badge — always visible */}
+      {captionCount > 0 && (
+        <div style={{
+          position: 'absolute', top: '10px', right: '10px',
+          background: 'rgba(6,3,15,0.75)', backdropFilter: 'blur(6px)',
+          borderRadius: '999px', padding: '3px 10px',
+          fontSize: '11px', fontWeight: 700, color: '#a78bfa',
+          border: '1px solid rgba(139,92,246,0.35)',
+          zIndex: 2,
         }}>
-          {image.id.slice(0, 8)}…
-        </p>
-        {image.additional_context && (
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '4px' }}>
-            {image.additional_context}
+          {captionCount} caption{captionCount !== 1 ? 's' : ''}
+        </div>
+      )}
+
+      {/* Hover overlay with caption */}
+      <div className="image-card-overlay" style={{ padding: '14px' }}>
+        {topCaption ? (
+          <>
+            {/* Caption text */}
+            <p style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'white',
+              lineHeight: '1.45',
+              marginBottom: '8px',
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+            }}>
+              &ldquo;{topCaption.content}&rdquo;
+            </p>
+            {/* Score + hint */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{
+                fontSize: '11px', fontWeight: 700,
+                color: (topCaption.like_count ?? 0) >= 0 ? '#10b981' : '#ef4444',
+              }}>
+                {(topCaption.like_count ?? 0) >= 0 ? '+' : ''}{topCaption.like_count ?? 0} pts
+              </span>
+              <span style={{
+                fontSize: '10px', color: 'rgba(255,255,255,0.5)',
+                background: 'rgba(139,92,246,0.3)', padding: '2px 7px',
+                borderRadius: '999px', backdropFilter: 'blur(4px)',
+              }}>
+                Click to rate
+              </span>
+            </div>
+          </>
+        ) : (
+          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>
+            No captions yet
           </p>
         )}
       </div>
