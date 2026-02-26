@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
+  const supabase = createClient()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -14,8 +15,8 @@ export default function LoginPage() {
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace('/')
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) router.replace('/')
     })
   }, [router])
 
@@ -29,6 +30,7 @@ export default function LoginPage() {
       if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
+        router.refresh()
         router.replace('/')
       } else {
         const { error } = await supabase.auth.signUp({ email, password })

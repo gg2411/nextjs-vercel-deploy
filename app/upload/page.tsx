@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
 export default function UploadPage() {
   const router = useRouter()
+  const supabase = createClient()
   const [user, setUser] = useState<User | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -19,9 +20,9 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) router.replace('/login')
-      else setUser(session.user)
+    supabase.auth.getUser().then(({ data: { user: u } }) => {
+      if (!u) router.replace('/login')
+      else setUser(u)
     })
   }, [router])
 

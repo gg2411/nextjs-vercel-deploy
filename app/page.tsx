@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
 interface ImageRow {
@@ -18,6 +18,7 @@ const PAGE_SIZE = 20
 
 export default function HomePage() {
   const router = useRouter()
+  const supabase = createClient()
   const [user, setUser] = useState<User | null>(null)
   const [images, setImages] = useState<ImageRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,11 +28,11 @@ export default function HomePage() {
   const [signingOut, setSigningOut] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
+    supabase.auth.getUser().then(({ data: { user: u } }) => {
+      if (!u) {
         router.replace('/login')
       } else {
-        setUser(session.user)
+        setUser(u)
         fetchImages(0)
       }
     })
@@ -68,6 +69,7 @@ export default function HomePage() {
   async function handleSignOut() {
     setSigningOut(true)
     await supabase.auth.signOut()
+    router.refresh()
     router.replace('/login')
   }
 
