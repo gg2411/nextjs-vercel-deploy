@@ -129,7 +129,8 @@ body {
   padding: 12px;
 }
 
-.image-card:hover .image-card-overlay { opacity: 1; }
+.image-card:hover .image-card-overlay,
+.image-card.tapped .image-card-overlay { opacity: 1; }
 
 .btn-vote {
   display: inline-flex;

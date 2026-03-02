@@ -21,6 +21,13 @@ interface ImageRow {
   captions: CaptionPreview[]
 }
 
+interface TopCaption {
+  id: string
+  content: string
+  like_count: number
+  image_url: string
+}
+
 const PAGE_SIZE = 20
 
 export default function HomePage() {
@@ -33,6 +40,7 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true)
   const [offset, setOffset] = useState(0)
   const [signingOut, setSigningOut] = useState(false)
+  const [topCaptions, setTopCaptions] = useState<TopCaption[]>([])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user: u } }) => {
@@ -41,6 +49,7 @@ export default function HomePage() {
       } else {
         setUser(u)
         fetchImages(0)
+        fetchLeaderboard()
       }
     })
 
@@ -51,6 +60,26 @@ export default function HomePage() {
 
     return () => subscription.unsubscribe()
   }, [router])
+
+  const fetchLeaderboard = useCallback(async () => {
+    const { data } = await supabase
+      .from('captions')
+      .select('id, content, like_count, images!inner(url)')
+      .eq('is_public', true)
+      .not('content', 'is', null)
+      .gt('like_count', 0)
+      .order('like_count', { ascending: false })
+      .limit(5)
+
+    if (data) {
+      setTopCaptions(data.map((c: { id: string; content: string; like_count: number; images: { url: string } | { url: string }[] }) => ({
+        id: c.id,
+        content: c.content,
+        like_count: c.like_count,
+        image_url: Array.isArray(c.images) ? c.images[0]?.url : (c.images as { url: string })?.url,
+      })))
+    }
+  }, [supabase])
 
   const fetchImages = useCallback(async (currentOffset: number) => {
     if (currentOffset === 0) setLoading(true)
@@ -74,7 +103,7 @@ export default function HomePage() {
 
     setLoading(false)
     setLoadingMore(false)
-  }, [])
+  }, [supabase])
 
   async function handleSignOut() {
     setSigningOut(true)
@@ -184,13 +213,77 @@ export default function HomePage() {
 
       {/* Main content */}
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
+
+        {/* Leaderboard */}
+        {topCaptions.length > 0 && (
+          <div className="fade-in" style={{ marginBottom: '40px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text)' }}>
+                🏆 Top Captions
+              </h2>
+              <button
+                onClick={() => router.push('/rate')}
+                style={{
+                  fontSize: '12px', color: '#a78bfa', fontWeight: 600,
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                }}
+              >
+                Rate more →
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {topCaptions.map((c, i) => (
+                <div
+                  key={c.id}
+                  onClick={() => router.push('/rate')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '14px',
+                    background: 'var(--surface)', border: '1px solid var(--border)',
+                    borderRadius: '12px', padding: '12px 16px', cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.4)'
+                    ;(e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+                    ;(e.currentTarget as HTMLElement).style.background = 'var(--surface)'
+                  }}
+                >
+                  <span style={{
+                    fontSize: '18px', fontWeight: 800, minWidth: '28px', textAlign: 'center',
+                    color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--muted)',
+                  }}>
+                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                  </span>
+                  {c.image_url && (
+                    <div style={{ width: '44px', height: '44px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                      <Image src={c.image_url} alt="" fill style={{ objectFit: 'cover' }} unoptimized sizes="44px" />
+                    </div>
+                  )}
+                  <p style={{ flex: 1, fontSize: '14px', color: 'var(--text)', lineHeight: '1.4', margin: 0 }}>
+                    &ldquo;{c.content}&rdquo;
+                  </p>
+                  <span style={{
+                    fontSize: '15px', fontWeight: 800, color: '#10b981',
+                    flexShrink: 0, fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    +{c.like_count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="fade-in" style={{ marginBottom: '28px' }}>
           <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>
             Image Gallery
           </h2>
           <p style={{ color: 'var(--muted)', fontSize: '14px' }}>
-            Showing {images.length} public image{images.length !== 1 ? 's' : ''} · Hover to preview captions
+            Showing {images.length} public image{images.length !== 1 ? 's' : ''} · Click an image to rate its captions
           </p>
         </div>
 
@@ -243,6 +336,7 @@ export default function HomePage() {
 
 function ImageCard({ image, onRate }: { image: ImageRow; onRate: () => void }) {
   const [imgError, setImgError] = useState(false)
+  const [tapped, setTapped] = useState(false)
 
   // Pick the top caption by like_count
   const topCaption = image.captions?.length
@@ -251,8 +345,22 @@ function ImageCard({ image, onRate }: { image: ImageRow; onRate: () => void }) {
 
   const captionCount = image.captions?.length ?? 0
 
+  function handleClick() {
+    // On touch devices: first tap shows overlay, second tap navigates
+    if (tapped) {
+      onRate()
+    } else {
+      setTapped(true)
+    }
+  }
+
   return (
-    <div className="image-card" onClick={onRate} style={{ cursor: 'pointer' }}>
+    <div
+      className={`image-card${tapped ? ' tapped' : ''}`}
+      onClick={handleClick}
+      onMouseLeave={() => setTapped(false)}
+      style={{ cursor: 'pointer' }}
+    >
       {imgError ? (
         <div style={{
           width: '100%', height: '100%',
@@ -290,11 +398,10 @@ function ImageCard({ image, onRate }: { image: ImageRow; onRate: () => void }) {
         </div>
       )}
 
-      {/* Hover overlay with caption */}
+      {/* Overlay — shows on hover (desktop) or tap (mobile) */}
       <div className="image-card-overlay" style={{ padding: '14px' }}>
         {topCaption ? (
           <>
-            {/* Caption text */}
             <p style={{
               fontSize: '13px',
               fontWeight: 600,
@@ -309,7 +416,6 @@ function ImageCard({ image, onRate }: { image: ImageRow; onRate: () => void }) {
             }}>
               &ldquo;{topCaption.content}&rdquo;
             </p>
-            {/* Score + hint */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{
                 fontSize: '11px', fontWeight: 700,
@@ -322,7 +428,7 @@ function ImageCard({ image, onRate }: { image: ImageRow; onRate: () => void }) {
                 background: 'rgba(139,92,246,0.3)', padding: '2px 7px',
                 borderRadius: '999px', backdropFilter: 'blur(4px)',
               }}>
-                Click to rate
+                {tapped ? 'Tap again to rate' : 'Click to rate'}
               </span>
             </div>
           </>

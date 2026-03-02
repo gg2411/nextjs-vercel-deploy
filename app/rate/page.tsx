@@ -30,7 +30,7 @@ export default function RatePage() {
   const [skipped, setSkipped] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [votingId, setVotingId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'unvoted'>('all')
+  const [filter, setFilter] = useState<'all' | 'unvoted'>('unvoted')
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user: u } }) => {
@@ -52,7 +52,7 @@ export default function RatePage() {
       .eq('is_public', true)
       .not('content', 'is', null)
       .order('created_datetime_utc', { ascending: false })
-      .limit(30)
+      .limit(60)
 
     if (captionsError || !captionsData) {
       setLoading(false)
@@ -156,11 +156,19 @@ export default function RatePage() {
     setSkipped(prev => new Set([...prev, captionId]))
   }
 
-  const visibleCaptions = captions.filter(c => {
-    if (skipped.has(c.id)) return false
-    if (filter === 'unvoted') return !votes[c.id]
-    return true
-  })
+  const visibleCaptions = captions
+    .filter(c => {
+      if (skipped.has(c.id)) return false
+      if (filter === 'unvoted') return !votes[c.id]
+      return true
+    })
+    .sort((a, b) => {
+      // Unvoted captions first, then sort by recency
+      const aVoted = !!votes[a.id]
+      const bVoted = !!votes[b.id]
+      if (aVoted !== bVoted) return aVoted ? 1 : -1
+      return 0
+    })
 
   if (loading) {
     return (
